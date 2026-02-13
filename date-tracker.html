@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Date Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .add-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            max-width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .form-group input[type="date"] {
+            padding: 12px;
+            min-height: 44px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .add-btn:active {
+            transform: scale(0.98);
+        }
+
+        .events-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .event-tile {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .event-tile:active {
+            transform: scale(0.98);
+        }
+
+        .event-tile.editing {
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .event-info {
+            flex: 1;
+        }
+
+        .event-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .event-date {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .days-ago {
+            text-align: right;
+            margin-left: 16px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .days-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            line-height: 1;
+            margin-bottom: 4px;
+            transition: transform 0.2s;
+        }
+
+        .days-ago:active .days-number {
+            transform: scale(0.95);
+        }
+
+        .days-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .edit-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .edit-overlay.active {
+            display: flex;
+        }
+
+        .edit-modal {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .edit-modal h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .edit-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .edit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .delete-btn {
+            background: #ff4444;
+            color: white;
+        }
+
+        .cancel-btn {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .backup-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .backup-modal.active {
+            display: flex;
+        }
+
+        .backup-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .backup-content h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .backup-text {
+            background: #f5f5f5;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin-bottom: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+
+        .backup-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .copy-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .copy-btn.copied {
+            background: #45a049;
+        }
+
+        .reorder-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+
+        .reorder-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .reorder-toggle.active {
+            background: #ff4444;
+        }
+
+        .backup-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+
+        .backup-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .event-tile.reorder-mode {
+            padding-left: 50px;
+        }
+
+        .drag-handle {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+            color: #999;
+            cursor: grab;
+            display: none;
+        }
+
+        .event-tile.reorder-mode .drag-handle {
+            display: block;
+        }
+
+        .event-tile.dragging {
+            opacity: 0.5;
+        }
+
+        .event-tile.drag-over {
+            border-top: 3px solid #667eea;
+        }
+
+        .days-ago {
+            text-align: right;
+            margin-left: 16px;
+        }
+            text-align: center;
+            color: white;
+            padding: 40px 20px;
+            opacity: 0.9;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📅 Date Tracker</h1>
+        <p>Track important dates and milestones</p>
+    </div>
+
+    <div class="add-section">
+        <div class="form-group">
+            <label for="eventName">Event Name</label>
+            <input type="text" id="eventName" placeholder="e.g., Started new job">
+        </div>
+        <div class="form-group">
+            <label for="eventDate">Date</label>
+            <input type="date" id="eventDate">
+        </div>
+        <button class="add-btn" onclick="addEvent()">Add Event</button>
+    </div>
+
+    <div class="events-container" id="eventsContainer">
+        <div class="empty-state">
+            <div class="empty-state-icon">🎯</div>
+            <p>No events yet. Add your first one above!</p>
+        </div>
+    </div>
+
+    <div class="edit-overlay" id="editOverlay" onclick="closeEditOverlay(event)">
+        <div class="edit-modal" onclick="event.stopPropagation()">
+            <h2>Edit Event</h2>
+            <div class="form-group">
+                <label for="editEventName">Event Name</label>
+                <input type="text" id="editEventName" placeholder="e.g., Started new job">
+            </div>
+            <div class="form-group">
+                <label for="editEventDate">Date</label>
+                <input type="date" id="editEventDate">
+            </div>
+            <div class="edit-actions">
+                <button class="action-btn edit-btn" onclick="saveEdit()">Save Changes</button>
+                <button class="action-btn delete-btn" onclick="confirmDelete()">Delete Event</button>
+                <button class="action-btn cancel-btn" onclick="closeEditOverlay()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <button class="reorder-toggle" id="reorderToggle" onclick="toggleReorderMode()" title="Reorder events">
+        ☰
+    </button>
+
+    <button class="backup-toggle" onclick="showBackupModal()" title="Backup to Notes">
+        💾
+    </button>
+
+    <div class="backup-modal" id="backupModal" onclick="closeBackupModal(event)">
+        <div class="backup-content" onclick="event.stopPropagation()">
+            <h2>📋 Backup Your Events</h2>
+            <div class="backup-text" id="backupText"></div>
+            <div class="backup-actions">
+                <button class="action-btn copy-btn" id="copyBtn" onclick="copyBackupText()">Copy to Clipboard</button>
+                <button class="action-btn cancel-btn" onclick="closeBackupModal()">Close</button>
+            </div>
+            <p style="font-size: 12px; color: #888; margin-top: 12px; line-height: 1.4;">
+                Tap "Copy to Clipboard", then open Notes app and paste. This creates a readable backup of all your events.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Load events from localStorage
+        let events = JSON.parse(localStorage.getItem('dateTrackerEvents')) || [];
+        let currentEditingId = null;
+        let isReorderMode = false;
+        let draggedElement = null;
+        let draggedIndex = null;
+        
+        // Track time format for each event (days, hours, weeks, months, years)
+        let timeFormats = JSON.parse(localStorage.getItem('dateTrackerTimeFormats')) || {};
+
+        // Set today's date as default
+        document.getElementById('eventDate').valueAsDate = new Date();
+
+        function calculateDaysAgo(dateString) {
+            const eventDate = new Date(dateString);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            eventDate.setHours(0, 0, 0, 0);
+            
+            const diffTime = today - eventDate;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays;
+        }
+
+        function calculateTimeInFormat(dateString, format) {
+            const eventDate = new Date(dateString);
+            const now = new Date();
+            
+            const diffTime = Math.abs(now - eventDate);
+            const isPast = now >= eventDate;
+            
+            let value, label;
+            
+            switch(format) {
+                case 'hours':
+                    value = Math.floor(diffTime / (1000 * 60 * 60));
+                    label = value === 1 ? 'hour' : 'hours';
+                    break;
+                case 'days':
+                    value = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    label = value === 1 ? 'day' : 'days';
+                    break;
+                case 'weeks':
+                    value = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+                    label = value === 1 ? 'week' : 'weeks';
+                    break;
+                case 'months':
+                    const yearsDiff = now.getFullYear() - eventDate.getFullYear();
+                    const monthsDiff = now.getMonth() - eventDate.getMonth();
+                    value = yearsDiff * 12 + monthsDiff;
+                    value = Math.abs(value);
+                    label = value === 1 ? 'month' : 'months';
+                    break;
+                case 'years':
+                    value = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
+                    label = value === 1 ? 'year' : 'years';
+                    break;
+                default:
+                    value = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    label = value === 1 ? 'day' : 'days';
+            }
+            
+            const suffix = isPast ? 'ago' : 'away';
+            const displayLabel = value === 0 && format === 'days' ? 'today' : `${label} ${suffix}`;
+            
+            return { value, label: displayLabel };
+        }
+
+        function cycleTimeFormat(eventId) {
+            if (isReorderMode) return; // Don't cycle in reorder mode
+            
+            const formats = ['days', 'hours', 'weeks', 'months', 'years'];
+            const currentFormat = timeFormats[eventId] || 'days';
+            const currentIndex = formats.indexOf(currentFormat);
+            const nextIndex = (currentIndex + 1) % formats.length;
+            
+            timeFormats[eventId] = formats[nextIndex];
+            localStorage.setItem('dateTrackerTimeFormats', JSON.stringify(timeFormats));
+            
+            renderEvents();
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+        }
+
+        function addEvent() {
+            const name = document.getElementById('eventName').value.trim();
+            const date = document.getElementById('eventDate').value;
+
+            if (!name || !date) {
+                alert('Please fill in both fields');
+                return;
+            }
+
+            const event = {
+                id: Date.now(),
+                name: name,
+                date: date
+            };
+
+            events.push(event);
+            saveEvents();
+            renderEvents();
+
+            // Clear inputs
+            document.getElementById('eventName').value = '';
+            document.getElementById('eventDate').valueAsDate = new Date();
+        }
+
+        function deleteEvent(id) {
+            events = events.filter(event => event.id !== id);
+            saveEvents();
+            renderEvents();
+            closeEditOverlay();
+        }
+
+        function openEditOverlay(id) {
+            currentEditingId = id;
+            const event = events.find(e => e.id === id);
+            
+            if (event) {
+                document.getElementById('editEventName').value = event.name;
+                document.getElementById('editEventDate').value = event.date;
+                document.getElementById('editOverlay').classList.add('active');
+            }
+        }
+
+        function closeEditOverlay(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('editOverlay').classList.remove('active');
+            currentEditingId = null;
+        }
+
+        function saveEdit() {
+            const name = document.getElementById('editEventName').value.trim();
+            const date = document.getElementById('editEventDate').value;
+
+            if (!name || !date) {
+                alert('Please fill in both fields');
+                return;
+            }
+
+            const eventIndex = events.findIndex(e => e.id === currentEditingId);
+            if (eventIndex !== -1) {
+                events[eventIndex].name = name;
+                events[eventIndex].date = date;
+                saveEvents();
+                renderEvents();
+                closeEditOverlay();
+            }
+        }
+
+        function confirmDelete() {
+            if (confirm('Are you sure you want to delete this event?')) {
+                deleteEvent(currentEditingId);
+            }
+        }
+
+        function toggleReorderMode() {
+            isReorderMode = !isReorderMode;
+            const toggleBtn = document.getElementById('reorderToggle');
+            
+            if (isReorderMode) {
+                toggleBtn.classList.add('active');
+                toggleBtn.innerHTML = '✓';
+                toggleBtn.title = 'Done reordering';
+            } else {
+                toggleBtn.classList.remove('active');
+                toggleBtn.innerHTML = '☰';
+                toggleBtn.title = 'Reorder events';
+            }
+            
+            renderEvents();
+        }
+
+        function handleDragStart(e, index) {
+            draggedElement = e.target;
+            draggedIndex = index;
+            e.target.classList.add('dragging');
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+            }
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            
+            // Remove all drag-over classes
+            document.querySelectorAll('.event-tile').forEach(tile => {
+                tile.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = 'move';
+            }
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            const tile = e.target.closest('.event-tile');
+            if (tile) {
+                tile.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            const tile = e.target.closest('.event-tile');
+            if (tile) {
+                tile.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e, dropIndex) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+
+            if (draggedIndex !== null && draggedIndex !== dropIndex) {
+                const draggedItem = events[draggedIndex];
+                events.splice(draggedIndex, 1);
+                events.splice(dropIndex, 0, draggedItem);
+                saveEvents();
+                renderEvents();
+            }
+
+            return false;
+        }
+
+        // Touch event handlers for mobile
+        let touchStartY = 0;
+        let touchCurrentY = 0;
+        let touchedElement = null;
+        let touchedIndex = null;
+
+        function handleTouchStart(e, index) {
+            if (!isReorderMode) return;
+            
+            touchedElement = e.currentTarget;
+            touchedIndex = index;
+            touchStartY = e.touches[0].clientY;
+            touchedElement.classList.add('dragging');
+            e.preventDefault();
+        }
+
+        function handleTouchMove(e) {
+            if (!touchedElement || !isReorderMode) return;
+            
+            e.preventDefault();
+            touchCurrentY = e.touches[0].clientY;
+            const deltaY = touchCurrentY - touchStartY;
+            
+            // Move the element visually
+            touchedElement.style.transform = `translateY(${deltaY}px)`;
+            touchedElement.style.zIndex = '1000';
+            
+            // Find which tile we're over
+            const tiles = Array.from(document.querySelectorAll('.event-tile'));
+            const overTile = tiles.find(tile => {
+                if (tile === touchedElement) return false;
+                const rect = tile.getBoundingClientRect();
+                return touchCurrentY >= rect.top && touchCurrentY <= rect.bottom;
+            });
+            
+            // Remove all drag-over classes
+            tiles.forEach(tile => tile.classList.remove('drag-over'));
+            
+            // Add drag-over to the tile we're hovering
+            if (overTile) {
+                overTile.classList.add('drag-over');
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchedElement || !isReorderMode) return;
+            
+            e.preventDefault();
+            
+            // Find which tile we dropped on
+            const tiles = Array.from(document.querySelectorAll('.event-tile'));
+            const dropTile = tiles.find(tile => tile.classList.contains('drag-over'));
+            
+            if (dropTile) {
+                const dropIndex = tiles.indexOf(dropTile);
+                
+                if (touchedIndex !== dropIndex) {
+                    const draggedItem = events[touchedIndex];
+                    events.splice(touchedIndex, 1);
+                    events.splice(dropIndex, 0, draggedItem);
+                    saveEvents();
+                }
+            }
+            
+            // Reset styles
+            touchedElement.style.transform = '';
+            touchedElement.style.zIndex = '';
+            touchedElement.classList.remove('dragging');
+            
+            // Remove all drag-over classes
+            tiles.forEach(tile => tile.classList.remove('drag-over'));
+            
+            touchedElement = null;
+            touchedIndex = null;
+            
+            renderEvents();
+        }
+
+        function handleTileClick(e, id) {
+            if (!isReorderMode) {
+                openEditOverlay(id);
+            }
+        }
+
+        function generateBackupText() {
+            if (events.length === 0) {
+                return "No events to backup.";
+            }
+
+            let backupText = "📅 DATE TRACKER BACKUP\n";
+            backupText += "Generated: " + new Date().toLocaleString() + "\n";
+            backupText += "═".repeat(40) + "\n\n";
+
+            events.forEach((event, index) => {
+                const format = timeFormats[event.id] || 'days';
+                const timeData = calculateTimeInFormat(event.date, format);
+                
+                backupText += `${index + 1}. ${event.name}\n`;
+                backupText += `   Date: ${formatDate(event.date)}\n`;
+                backupText += `   Time: ${timeData.value} ${timeData.label}\n`;
+                backupText += `   Format: ${format}\n`;
+                backupText += `   Raw: ${event.date}\n`;
+                backupText += "\n";
+            });
+
+            backupText += "═".repeat(40) + "\n";
+            backupText += `Total Events: ${events.length}\n`;
+            backupText += "\nTo restore: Copy this backup and keep it safe in Notes.";
+
+            return backupText;
+        }
+
+        function showBackupModal() {
+            const backupText = generateBackupText();
+            document.getElementById('backupText').textContent = backupText;
+            document.getElementById('backupModal').classList.add('active');
+        }
+
+        function closeBackupModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('backupModal').classList.remove('active');
+            
+            // Reset copy button
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.textContent = 'Copy to Clipboard';
+            copyBtn.classList.remove('copied');
+        }
+
+        async function copyBackupText() {
+            const backupText = document.getElementById('backupText').textContent;
+            const copyBtn = document.getElementById('copyBtn');
+            
+            try {
+                await navigator.clipboard.writeText(backupText);
+                copyBtn.textContent = '✓ Copied!';
+                copyBtn.classList.add('copied');
+                
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy to Clipboard';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = backupText;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    copyBtn.textContent = '✓ Copied!';
+                    copyBtn.classList.add('copied');
+                    
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy to Clipboard';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    alert('Could not copy text. Please select and copy manually.');
+                }
+                
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function saveEvents() {
+            localStorage.setItem('dateTrackerEvents', JSON.stringify(events));
+        }
+
+        function renderEvents() {
+            const container = document.getElementById('eventsContainer');
+
+            if (events.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎯</div>
+                        <p>No events yet. Add your first one above!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Don't sort in reorder mode - maintain user's custom order
+            if (!isReorderMode) {
+                events.sort((a, b) => new Date(b.date) - new Date(a.date));
+            }
+
+            container.innerHTML = events.map((event, index) => {
+                const format = timeFormats[event.id] || 'days';
+                const timeData = calculateTimeInFormat(event.date, format);
+                const reorderClass = isReorderMode ? 'reorder-mode' : '';
+                const draggableAttr = isReorderMode ? 'draggable="true"' : '';
+
+                return `
+                    <div class="event-tile ${reorderClass}" 
+                         ${draggableAttr}
+                         onclick="handleTileClick(event, ${event.id})"
+                         ondragstart="handleDragStart(event, ${index})"
+                         ondragend="handleDragEnd(event)"
+                         ondragover="handleDragOver(event)"
+                         ondragenter="handleDragEnter(event)"
+                         ondragleave="handleDragLeave(event)"
+                         ondrop="handleDrop(event, ${index})"
+                         ontouchstart="handleTouchStart(event, ${index})"
+                         ontouchmove="handleTouchMove(event)"
+                         ontouchend="handleTouchEnd(event)">
+                        <div class="drag-handle">☰</div>
+                        <div class="event-info">
+                            <div class="event-name">${event.name}</div>
+                            <div class="event-date">${formatDate(event.date)}</div>
+                        </div>
+                        <div class="days-ago" onclick="event.stopPropagation(); cycleTimeFormat(${event.id})">
+                            <div class="days-number">${timeData.value}</div>
+                            <div class="days-label">${timeData.label}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initial render
+        renderEvents();
+
+        // Allow Enter key to submit
+        document.getElementById('eventName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addEvent();
+        });
+        document.getElementById('eventDate').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addEvent();
+        });
+    </script>
+</body>
+</html>
